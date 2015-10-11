@@ -12,8 +12,8 @@ CLIENT= FrameTest.cpp
 SERVER= FrameTest.cpp
 CLIENTEX= client
 SERVEREX= server
-SRC= Frame.cpp utility.cpp Packet.cpp
-OBJECTS= $(SRC:.c=.o)
+SRC= Frame.cpp utility.cpp Packet.cpp Timer.cpp ClientDL.cpp
+OBJECTS= $(SRC:.cpp=.o)
 
 all: $(CLIENTEX) $(SERVEREX) Makefile
 
