@@ -45,9 +45,6 @@ Frame::Frame(int init_seqNum, char * init_payload, char init_eop)
 		eop = IS_EOP;	// If an invalid entry is passed, assume its the end of a packet
 	else
 		eop = init_eop;
-
-	// Calculate the error detection bytes
-	calcErrorDetect(ed);
 } // Frame(int, char *, char)
 
 /*
@@ -57,12 +54,13 @@ Frame::Frame(int init_seqNum, char * init_payload, char init_eop)
 void Frame::constructFrame(char * frame_str)
 {
 	/* Create the final string to send to the server */
-	sprintf(frame_str, "%2d%c%s%c%c",
+	sprintf(frame_str, "%2d%c",
 							seqNum,
-							eop,
-							payload,
-							ed[0],
-							ed[1]);
+							eop);
+
+	memcpy(frame_str + 3, payload, size);
+	frame_str[size - 2] = ed[0];
+	frame_str[size - 1] = ed[1];
 } // constructFrame(char *)
 
 /* Build a frame by pulling information out of a formatted cstring */
@@ -104,17 +102,8 @@ void Frame::calcErrorDetect(char * new_ed)
 	// Initialize the errorDetect to the seqNum
 	memcpy(new_ed, frameToken, 2);
 /*
-	// Check the length of our payload so far
-	int payloadLen = strlen(payload);
-
-	if (size > 4)
-		payloadLen = size - 5;
-
-	// Add one for the eop byte
-	payloadLen++;
-
 	// If we don't have a payload, just XOR the eop byte and an extra byte
-	if (payloadLen == 1)
+	if (size >= 4)
 	{
 		frameToken[0] = eop;
 		frameToken[1] = ' ';
@@ -123,7 +112,7 @@ void Frame::calcErrorDetect(char * new_ed)
 		new_ed[1] ^= frameToken[1];
 	}
 	// If we have an odd number of bytes, loop through the payload with an extra byte
-	else if (payloadLen % 2 == 1)
+	else if (size % 2 == 1)
 	{
 		frameToken[0] = eop;
 		frameToken[1] = ' ';
@@ -132,7 +121,7 @@ void Frame::calcErrorDetect(char * new_ed)
 		new_ed[1] ^= frameToken[1];
 
 		int i;
-		for (i = 0; i < payloadLen - 1; i += 2)
+		for (i = 0; i < size - 5; i += 2)
 		{
 			frameToken[0] = payload[i];
 			frameToken[1] = payload[i + 1];
@@ -152,7 +141,7 @@ void Frame::calcErrorDetect(char * new_ed)
 
 		// Loop through the payload starting on the second character
 		int i;
-		for (i = 1; i < payloadLen - 1; i += 2)
+		for (i = 1; i < size - 5; i += 2)
 		{
 			frameToken[0] = payload[i];
 			frameToken[1] = payload[i + 1];
@@ -160,8 +149,7 @@ void Frame::calcErrorDetect(char * new_ed)
 			new_ed[0] ^= frameToken[0];
 			new_ed[1] ^= frameToken[1];
 		}
-	}
-*/
+	} */
 } // calcErrorDetect()
 
 /* Getters/Setters */

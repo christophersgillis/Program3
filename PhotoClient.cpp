@@ -50,7 +50,9 @@ int main(int argc, char * argv[])
 	int id;					// A unique id for this client
 	tcp_client pl;			// The simulated physical layer for this client
 	int bytesRcvd;			// The number of bytes received in a single recv call
-	char frameBuffer[135];	// The buffer for a received frame
+	char frameBuffer[135];	// The buffer for a sent frame
+	char recvBuffer[135];	// The buffer for a received frame
+	Frame ack;				// The ack received from the server
 
 	/* Check for the proper number of arguments */
 	if (argc < 4 || argc >= 5)
@@ -96,45 +98,84 @@ int main(int argc, char * argv[])
 
 			// If we don't read the full amount, we must be at the end of the
 			// file.
-			if (photo.eof())
+			if (photo.eof() || (photo.gcount() < 256))
 				tempPkt.setEOPH(IS_EOPH);
 
 			// Pass the packet to the datalink layer
 			dl.toNetworkLayer(tempPkt);
 			
-			// Pass to the physical layer
-			int i;
-			for (i = 0; i < dl.getNumFrames(); i++)
+			// Send the first frame
+			dl.getFrame(0).constructFrame(frameBuffer);
+			int fBufferLen = dl.getFrame(0).getSize();
+			char buffer[3];
+			int bufferLen = 3;
+			sprintf(buffer, "%3d", fBufferLen);
+
+			// Send the frame until it is received properly
+			while (true)
 			{
-				int bytesSent;
-
-				// Send the frame to the server
-				dl.getFrame(i).constructFrame(frameBuffer);
-				int fBufferLen = dl.getFrame(i).getSize();;
-				char buffer[3];
-				int bufferLen = 3;
-				sprintf(buffer, "%3d", fBufferLen);
-
-				// Send the length of the frame to the server
+				// Send the length of the frame
 				pl.writeToSocket(buffer, bufferLen);
 
-				// Send the frame to the server
-				bytesSent = pl.writeToSocket(frameBuffer, fBufferLen);
+				if (!pl.writeToSocket(frameBuffer, fBufferLen))
+					DieWithError("send() failed");
 
-				cout << bytesSent << endl;
-/*				// Recv the frame back from the server
-				bytesRcvd = pl.readFromSocketWithTimeout(frameBuffer, MAX_BUFFER_SIZE, TIMEOUT);
-				
+				// Recv an ack from the server
+				bytesRcvd = pl.readFromSocketWithTimeout(recvBuffer, 5, TIMEOUT);
+
 				if (bytesRcvd == 0)
 					DieWithError("Recv() failed");
 				else if (bytesRcvd == -1)
-				{
-					// handle timeout
-				}
+					continue;
 				else
 				{
 					// Send ack to datalink layer
-				} */
+					ack.deconstructFrame(recvBuffer, 5);
+
+					if (ack.getSeqNum() == dl.getFrame(0).getSeqNum())
+					{
+						dl.removeFrame(0);
+						break;
+					}
+					else
+						continue;
+				} 
+			}
+
+			// Send the second frame
+			dl.getFrame(0).constructFrame(frameBuffer);
+			fBufferLen = dl.getFrame(0).getSize();
+			sprintf(buffer, "%3d", fBufferLen);
+
+			// Send the frame until it is received properly
+			while(true)
+			{
+				// send the length of the frame to the server
+				pl.writeToSocket(buffer, bufferLen);
+
+				if(!pl.writeToSocket(frameBuffer, fBufferLen))
+					DieWithError("send() failed");
+
+				// Recv an ack from the server
+				bytesRcvd = pl.readFromSocketWithTimeout(recvBuffer, 5, TIMEOUT);
+
+				if (bytesRcvd == 0)
+					DieWithError("Recv() failed");
+				else if (bytesRcvd == -1)
+					continue;
+				else
+				{
+					// send ack to datalink layer
+					ack.deconstructFrame(recvBuffer, 5);
+
+					if (ack.getSeqNum() == dl.getFrame(0).getSeqNum())
+					{
+						dl.removeFrame(0);
+						break;
+					}
+					else
+						continue;
+				} 
 			}
 
 			// If this was the last frame of the photo, move on to the next photo

@@ -101,6 +101,7 @@ Frame ServerDL::buildAck(int frame)
 	Frame ack;
 	ack.setSeqNum(framesRecvd[frame].getSeqNum());
 	ack.setEOP(NOT_EOP);
+	ack.setSize(5);
 
 	return ack;
 }

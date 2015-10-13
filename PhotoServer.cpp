@@ -62,6 +62,7 @@ int main(int argc, char * argv[])
 void HandleTCPClient(int sock, int clientNumber)
 {
 	char buffer[RCV_BUF_SIZE];	// A buffer to receive one frame.
+	char sendBuffer[135];		// A buffer for our acks
 	long bytesRead;
 	int photoNum;
 	int frameLen;
@@ -94,21 +95,26 @@ void HandleTCPClient(int sock, int clientNumber)
 		if ((bytesRead = servSock.readFromSocket(buffer, frameLen)) < 0)
 			DieWithError("recv() failed");
 
-		cout << bytesRead << endl;;
-
 		// Create a frame from the received string
 		if (!dl.addFrame(buffer, bytesRead))
 		{
 			// If there was an error with the frame, recv another frame
 			cout << "Error detected" << endl;
-			
-			// Send an ack
+			continue;
+		}
+		else
+		{
+			Frame sendFrame = dl.buildAck(0);
+			sendFrame.constructFrame(sendBuffer);
+
+			if (!servSock.writeToSocket(sendBuffer, 5))
+				DieWithError("send() failed");
 		}
 		// Send the packets to the network layer
 		if (dl.getNumFrames() > 1)
 		{
 			tempPkt = dl.buildPacket();
-			photo.write(tempPkt.getPacket(), strlen(tempPkt.getPacket()));
+			photo.write(tempPkt.getPacket(), tempPkt.getSize());
 
 			if (tempPkt.getEOPH() == IS_EOPH)
 				break;
