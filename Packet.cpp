@@ -33,7 +33,8 @@ Packet::Packet(char * init_packet, char init_eoph)
  */
 void Packet::constructPacket(char * pktString)
 {
-	sprintf(pktString, "%s%c", packet, eoph);
+	memcpy(pktString, packet, size);
+	pktString[size] = eoph;
 } // constructPacket(char *)
 
 /* Build a packet by pulling information out of a formatted string */
@@ -52,13 +53,7 @@ void Packet::deconstructPacket(char * pktString, int pktSize)
 void Packet::setPacket(char * new_packet)
 {
 	/* Ensure the packet is no more than 256 bytes */
-	int packLen = strlen(new_packet);
-	strncpy(packet, new_packet, 256);
-	// Terminate the string
-	if (packLen < 256)
-		packet[packLen] = '\0';
-	else
-		packet[255] = '\0';
+	memcpy(packet, new_packet, size);
 }
 // Getter defined in header
 

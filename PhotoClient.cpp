@@ -90,6 +90,7 @@ int main(int argc, char * argv[])
 			photo.read(temp, 256);
 
 			// Build the packet structure
+			tempPkt.setSize(photo.gcount() + 1);
 			tempPkt.setPacket(temp);
 			tempPkt.setEOPH(NOT_EOPH);
 

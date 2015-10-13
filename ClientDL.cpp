@@ -23,7 +23,7 @@ void ClientDL::toNetworkLayer(Packet pkt)
 	pkt.constructPacket(temp);
 
 	// Get the length of the packet to see how many frames we need to make
-	int pktLen = strlen(temp);
+	int pktLen = pkt.getSize() + 1;
 
 	Frame tempFrame;	// A temporary frame before we insert it into the datalink layer
 
@@ -33,7 +33,7 @@ void ClientDL::toNetworkLayer(Packet pkt)
 	if (pktLen >= 130)
 	{
 		// Get part of the packet to put into the frame
-		offset = (pktLen / 2);
+		offset = (pktLen / 2) - (pktLen % 2);
 		memcpy(tempPayload, temp, offset);
 
 		// Set the information in the frame
