@@ -14,19 +14,25 @@ ServerDL::ServerDL()
 }
 
 /* Add a frame to the array. Return false if array is full */
-bool ServerDL::addFrame(char * frameStr)
+bool ServerDL::addFrame(char * frameStr, int size)
 {
 	if (numFrames >= 100)
 		return false;
 
+	if (size == 0)
+		return false;
+
 	Frame new_frame;
 
-	new_frame.deconstructFrame(frameStr);
+	new_frame.deconstructFrame(frameStr, size);
 
 	/* Check the error detection bytes */
 	char ed[2];
 	new_frame.calcErrorDetect(ed);
-	if (strncmp(ed, new_frame.getEd(), 2) != 0)
+	char test[2];
+	memcpy(test, new_frame.getEd(), 2);
+
+	if (memcmp(ed, new_frame.getEd(), 2) != 0)
 	{
 		return false;
 	}
@@ -58,6 +64,7 @@ Packet ServerDL::buildPacket()
 	char payload[257];
 	strcpy(payload, "");
 	int seqNum = 0;
+	int pktSize = 0;
 
 	while(1)
 	{
@@ -68,13 +75,14 @@ Packet ServerDL::buildPacket()
 				Packet junk;
 				return junk;
 			}
-
+			pktSize += framesRecvd[0].getSize();
 			strcat(payload, framesRecvd[0].getPayload());
 			removeFrame(0);
 			break;
 		}
 		else
 		{
+			pktSize += framesRecvd[0].getSize();
 			strcat(payload, framesRecvd[0].getPayload());
 			seqNum = framesRecvd[0].getSeqNum();
 			removeFrame(0);
@@ -82,7 +90,7 @@ Packet ServerDL::buildPacket()
 	}
 
 	Packet newPacket;
-	newPacket.deconstructPacket(payload);
+	newPacket.deconstructPacket(payload, pktSize);
 
 	return newPacket;
 }

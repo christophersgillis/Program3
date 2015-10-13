@@ -13,6 +13,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>
 
 #define NOT_EOP 0x02	// Indicates this frame is the end of a packet
 #define IS_EOP  0x03	// Indicates this frame is not the end of a packet
@@ -24,7 +25,7 @@ class Frame
 		char eop;			// The end-of-packet byte
 		char ed[2];			// 2 bytes assigned to error detection
 		char payload[130];	// The data to send
-
+		int size;			// The size of the frame.
 	public:
 		/* Default constructor */
 		Frame();
@@ -36,7 +37,7 @@ class Frame
 		void constructFrame(char * frame_str);
 
 		/* Set the parameters of the frame from a cstring */
-		void deconstructFrame(char * frame_str);
+		void deconstructFrame(char * frame_str, int size);
 
 		/* Calculate the error detection bytes using XOR folding */
 		void calcErrorDetect(char * new_ed);
@@ -53,6 +54,9 @@ class Frame
 
 		// No setter for error detection
 		char * getEd();
+
+		void setSize(int new_size) {size = new_size;};
+		int getSize() const {return size;};
 };
 
 #endif

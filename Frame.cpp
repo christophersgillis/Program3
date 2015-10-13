@@ -14,11 +14,14 @@ Frame::Frame()
 	seqNum = 0;			// The sequence number will be 0 for now.
 	strcpy(payload, "");// Set the payload to an empty string
 	calcErrorDetect(ed);// Calculate the error detection bytes
+	size = 0;
 } // Frame()
 
 /* Constructor with information */
 Frame::Frame(int init_seqNum, char * init_payload, char init_eop)
 {
+	size = 0;
+
 	// Fill in values from arguments
 	/* Ensure the sequence number is only 2 characters long */
 	if (init_seqNum > 99 || init_seqNum < 0)
@@ -27,7 +30,8 @@ Frame::Frame(int init_seqNum, char * init_payload, char init_eop)
 		seqNum = init_seqNum;			
 
 	/* Ensure the payload is no more than 130 characters */
-	strncpy(payload, init_payload, 130);
+	memcpy(payload, init_payload, 130);
+
 	// Terminate the string
 	if (strlen(init_payload) < 130)
 	{
@@ -62,11 +66,12 @@ void Frame::constructFrame(char * frame_str)
 } // constructFrame(char *)
 
 /* Build a frame by pulling information out of a formatted cstring */
-void Frame::deconstructFrame(char * frame_str)
+void Frame::deconstructFrame(char * frame_str, int frmSize)
 {
-	/*
-	 * String format: [SEQ_NUM][EOP][PAYLOAD][ED]
-	 */
+	/* String format: [SEQ_NUM][EOP][PAYLOAD][ED] */
+
+	if (frmSize == 0)
+		return;
 
 	/* Get the sequence number from the string */
 	char seq_str[2];
@@ -78,13 +83,15 @@ void Frame::deconstructFrame(char * frame_str)
 	eop = frame_str[2];
 
 	/* Get the error detection bytes */
-	ed[0] = frame_str[strlen(frame_str) - 2];
-	ed[1] = frame_str[strlen(frame_str) - 1];
+	ed[0] = frame_str[frmSize - 2];
+	ed[1] = frame_str[frmSize - 1];
 
 	/* Lastly, get the payload from the leftover bytes */
 	// Subtract 5 from the length because of the other information in the string
-	int payloadSize = strlen(frame_str) - 5;	
+	int payloadSize = frmSize - 5;	
 	memcpy(payload, frame_str + 3, payloadSize);
+
+	size = frmSize;
 } // deconstructFrame(char *)
 
 void Frame::calcErrorDetect(char * new_ed)
@@ -95,10 +102,13 @@ void Frame::calcErrorDetect(char * new_ed)
 	sprintf(frameToken, "%2d", seqNum);
 
 	// Initialize the errorDetect to the seqNum
-	strncpy(new_ed, frameToken, 2);
-
+	memcpy(new_ed, frameToken, 2);
+/*
 	// Check the length of our payload so far
 	int payloadLen = strlen(payload);
+
+	if (size > 4)
+		payloadLen = size - 5;
 
 	// Add one for the eop byte
 	payloadLen++;
@@ -151,7 +161,7 @@ void Frame::calcErrorDetect(char * new_ed)
 			new_ed[1] ^= frameToken[1];
 		}
 	}
-
+*/
 } // calcErrorDetect()
 
 /* Getters/Setters */
@@ -173,14 +183,7 @@ int Frame::getSeqNum() const
 void Frame::setPayload(char * new_payload)
 {
 	/* Make sure the payload is at most 130 characters */
-	strncpy(payload, new_payload, 130);
-	// Terminate the string
-	if (strlen(new_payload) < 130)
-	{
-		payload[strlen(new_payload)] = '\0';
-	}
-	else
-		payload[129] = '\0';
+	memcpy(payload, new_payload, 130);
 }
 char * Frame::getPayload()
 {
@@ -195,6 +198,8 @@ void Frame::setEOP(char new_eop)
 		eop = IS_EOP;
 	else
 		eop = new_eop;
+
+	calcErrorDetect(ed);
 }
 char Frame::getEOP() const
 {

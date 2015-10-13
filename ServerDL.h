@@ -26,7 +26,7 @@ class ServerDL
 		ServerDL();
 
 		/* Add a frame to the array */
-		bool addFrame(char * frameStr);
+		bool addFrame(char * frameStr, int size);
 
 		/* Remove the frame at the given index */
 		bool removeFrame(int frameIndex);

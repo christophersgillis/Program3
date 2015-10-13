@@ -13,6 +13,10 @@
 
 #include "Frame.h"
 #include "Timer.h"
+#include "Packet.h"
+#include "ClientPL.h"
+
+#include <iostream>
 
 class ClientDL
 {
@@ -25,6 +29,9 @@ class ClientDL
 		/* Default constructor */
 		ClientDL();
 
+		/* Take a packet and build frames for it */
+		void toNetworkLayer(Packet pkt);
+
 		/* Add a frame to monitor */
 		bool addFrame(Frame new_frame);
 
@@ -36,6 +43,10 @@ class ClientDL
 
 		/* Check and reset the timer for a frame */
 		long int startFrameTimer(int frameIndex);
+
+		/* Getters */
+		Frame getFrame(int frameIndex) const;
+		int getNumFrames() const;
 };
 
 #endif
